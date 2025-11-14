@@ -115,6 +115,21 @@
 
 #ifdef __SSE__
 #define PREFETCH(x, hint) _mm_prefetch((const char *)(x), (hint));
+#elif defined(__aarch64__) || defined(__arm__)
+/*
+ * Provide fallback definitions of the x86 prefetch hint macros when
+ * building on ARM targets, and map PREFETCH(...) to the compiler
+ * builtin.  The x86 hint macros have values 3 (T0), 2 (T1), 1 (T2),
+ * 0 (NTA) which map naturally to the "locality" argument of
+ * __builtin_prefetch(ptr, rw, locality).
+ */
+#ifndef _MM_HINT_T0
+#define _MM_HINT_T0 3
+#define _MM_HINT_T1 2
+#define _MM_HINT_T2 1
+#define _MM_HINT_NTA 0
+#endif
+#define PREFETCH(x, hint) __builtin_prefetch((const void *)(x), 0, (hint));
 #else
 #undef PREFETCH
 #endif
