@@ -602,11 +602,11 @@ static char* is_key_right(struct fmt_main *format, int index,
 		return err_buf;
 	}
 
-	if (match == 0) {
+	if (match <= 0) {
 		if (options.verbosity > VERB_LEGACY)
-			snprintf(err_buf, sizeof(err_buf), "crypt_all(%d) zero return %s", index + 1, ciphertext);
+			snprintf(err_buf, sizeof(err_buf), "crypt_all(%d) = %d for %s", index + 1, match, ciphertext);
 		else
-			sprintf(err_buf, "crypt_all(%d) zero return", index + 1);
+			sprintf(err_buf, "crypt_all(%d) = %d", index + 1, match);
 		return err_buf;
 	}
 
@@ -864,7 +864,7 @@ static char *fmt_self_test_body(struct fmt_main *format,
 	if (format->methods.cmp_exact == NULL)  return "method cmp_exact NULL";
 
 	if (format->params.plaintext_length < 1 ||
-	    format->params.plaintext_length > PLAINTEXT_BUFFER_SIZE - 3)
+	    format->params.plaintext_length > MAX_PLAINTEXT_LENGTH)
 		return "plaintext_length";
 
 	if (format->params.benchmark_length < 0 ||
