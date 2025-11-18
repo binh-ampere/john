@@ -117,7 +117,7 @@
 
 #ifdef __SSE__
 #define PREFETCH(x, hint) _mm_prefetch((const char *)(x), (hint));
-#elif defined(__aarch64__) || defined(__arm__)
+#elif __ARM_NEON
 /*
  * Provide fallback definitions of the x86 prefetch hint macros when
  * building on ARM targets, and map PREFETCH(...) to the compiler
@@ -460,16 +460,23 @@ static uint32_t blockmix_salsa8_xor(const salsa20_blk_t *restrict Bin1,
     const salsa20_blk_t *restrict Bin2, salsa20_blk_t *restrict Bout,
     size_t r)
 {
-	size_t i;
+	size_t i, j;
 	DECL_X
 
 #ifdef PREFETCH
-	PREFETCH(&Bin2[r * 2 - 1], _MM_HINT_T0)
-	for (i = 0; i < r - 1; i++) {
-		PREFETCH(&Bin2[i * 2], _MM_HINT_T0)
-		PREFETCH(&Bin2[i * 2 + 1], _MM_HINT_T0)
-	}
-	PREFETCH(&Bin2[i * 2], _MM_HINT_T0)
+        for (i = 0; i < 8; i++) {
+                PREFETCH(&Bin1[r * 2 - 1].d[i], _MM_HINT_T0)
+                PREFETCH(&Bin2[r * 2 - 1].d[i], _MM_HINT_T0)
+        }
+        for (i = 0; i < r - 1; i++) {
+                for (j = 0; j < 8; j++) {
+                        PREFETCH(&Bin2[i * 2].d[j], _MM_HINT_T0)
+                        PREFETCH(&Bin2[i * 2 + 1].d[j], _MM_HINT_T0)
+                }
+        }
+        for (j = 0; j < 8; j++) {
+                PREFETCH(&Bin2[i * 2].d[j], _MM_HINT_T0)
+        }
 #endif
 
 	XOR_X_2(Bin1[r * 2 - 1], Bin2[r * 2 - 1])
