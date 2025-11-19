@@ -131,9 +131,10 @@
 #define _MM_HINT_T2 1
 #define _MM_HINT_NTA 0
 #endif
-#define PREFETCH(x, hint) __builtin_prefetch((const void *)(x), 0, (hint));
+#define PREFETCH_ARM64(x, hint) __builtin_prefetch((const void *)(x), 0, (hint));
 #else
 #undef PREFETCH
+#undef PREFETCH_ARM64
 #endif
 
 typedef union {
@@ -464,6 +465,13 @@ static uint32_t blockmix_salsa8_xor(const salsa20_blk_t *restrict Bin1,
 	DECL_X
 
 #ifdef PREFETCH
+        PREFETCH(&Bin2[r * 2 - 1].d[i], _MM_HINT_T0)
+        for (i = 0; i < r - 1; i++) {
+                PREFETCH(&Bin2[i * 2].d[j], _MM_HINT_T0)
+                PREFETCH(&Bin2[i * 2 + 1].d[j], _MM_HINT_T0)
+        }
+        PREFETCH(&Bin2[i * 2].d[j], _MM_HINT_T0)
+#elif PREFETCH_ARM64
         for (i = 0; i < 8; i++) {
                 PREFETCH(&Bin1[r * 2 - 1].d[i], _MM_HINT_T0)
                 PREFETCH(&Bin2[r * 2 - 1].d[i], _MM_HINT_T0)
