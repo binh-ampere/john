@@ -145,7 +145,6 @@ typedef union {
 #endif
 } salsa20_blk_t;
 
-#if 0
 static inline void salsa20_simd_shuffle(const salsa20_blk_t *Bin,
     salsa20_blk_t *Bout)
 {
@@ -161,57 +160,6 @@ static inline void salsa20_simd_shuffle(const salsa20_blk_t *Bin,
 	COMBINE(7, 3, 5)
 #undef COMBINE
 }
-#endif
-
-static inline void salsa20_simd_shuffle(const salsa20_blk_t *Bin,
-    salsa20_blk_t *Bout)
-{
-    uint32x4_t w_vec[4];
-    w_vec[0] = vld1q_u32(Bin->w + 0);
-    w_vec[1] = vld1q_u32(Bin->w + 4);
-    w_vec[2] = vld1q_u32(Bin->w + 8);
-    w_vec[3] = vld1q_u32(Bin->w + 12);
-
-#define GET_W(idx) vgetq_lane_u32(w_vec[(idx) / 4], (idx) % 4)
-    // Bout->d[0] and Bout->d[1] calculation:
-    // d[0] = w[0]  | (w[5] << 32)
-    // d[1] = w[10] | (w[15] << 32)
-    uint32x2_t low_0_1_u32 = {GET_W(0), GET_W(10)};
-    uint32x2_t high_0_1_u32 = {GET_W(5), GET_W(15)};
-    uint64x2_t d0_1_low = vmovl_u32(low_0_1_u32);
-    uint64x2_t d0_1_high = vshlq_n_u64(vmovl_u32(high_0_1_u32), 32);
-    vst1q_u64(Bout->d + 0, vorrq_u64(d0_1_low, d0_1_high));
-
-    // Bout->d[2] and Bout->d[3] calculation:
-    // d[2] = w[4]  | (w[9] << 32)
-    // d[3] = w[14] | (w[3] << 32)
-    uint32x2_t low_2_3_u32 = {GET_W(4), GET_W(14)};
-    uint32x2_t high_2_3_u32 = {GET_W(9), GET_W(3)};
-    uint64x2_t d2_3_low = vmovl_u32(low_2_3_u32);
-    uint64x2_t d2_3_high = vshlq_n_u64(vmovl_u32(high_2_3_u32), 32);
-    vst1q_u64(Bout->d + 2, vorrq_u64(d2_3_low, d2_3_high));
-
-    // Bout->d[4] and Bout->d[5] calculation:
-    // d[4] = w[8]  | (w[13] << 32)
-    // d[5] = w[2]  | (w[7] << 32)
-    uint32x2_t low_4_5_u32 = {GET_W(8), GET_W(2)};
-    uint32x2_t high_4_5_u32 = {GET_W(13), GET_W(7)};
-    uint64x2_t d4_5_low = vmovl_u32(low_4_5_u32);
-    uint64x2_t d4_5_high = vshlq_n_u64(vmovl_u32(high_4_5_u32), 32);
-    vst1q_u64(Bout->d + 4, vorrq_u64(d4_5_low, d4_5_high));
-
-    // Bout->d[6] and Bout->d[7] calculation:
-    // d[6] = w[12] | (w[1] << 32)
-    // d[7] = w[6]  | (w[11] << 32)
-    uint32x2_t low_6_7_u32 = {GET_W(12), GET_W(6)};
-    uint32x2_t high_6_7_u32 = {GET_W(1), GET_W(11)};
-    uint64x2_t d6_7_low = vmovl_u32(low_6_7_u32);
-    uint64x2_t d6_7_high = vshlq_n_u64(vmovl_u32(high_6_7_u32), 32);
-    vst1q_u64(Bout->d + 6, vorrq_u64(d6_7_low, d6_7_high));
-
-#undef GET_W
-}
-
 
 static inline void salsa20_simd_unshuffle(const salsa20_blk_t *Bin,
     salsa20_blk_t *Bout)
